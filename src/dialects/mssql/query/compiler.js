@@ -160,11 +160,11 @@ assign(QueryCompiler_MSSQL.prototype, {
       case 'update':
       case 'insert':
         return value
-          ? `output ${this.formatter.columnizeWithPrefix('inserted.', value)}`
+          ? '' // `output ${this.formatter.columnizeWithPrefix('inserted.', value)}`
           : '';
       case 'del':
         return value
-          ? `output ${this.formatter.columnizeWithPrefix('deleted.', value)}`
+          ? '' //`output ${this.formatter.columnizeWithPrefix('deleted.', value)}`
           : '';
       case 'rowcount':
         return value ? ';select @@rowcount' : '';
