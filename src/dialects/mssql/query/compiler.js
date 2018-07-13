@@ -41,6 +41,7 @@ assign(QueryCompiler_MSSQL.prototype, {
     const returningSql = returning
       ? this._returning('insert', returning) + ' '
       : '';
+    const postReturningSql = returning ? this._postReturning('insert', returning) + ' ': '';
 
     if (Array.isArray(insertValues)) {
       if (insertValues.length === 0) {
@@ -48,7 +49,7 @@ assign(QueryCompiler_MSSQL.prototype, {
       }
     } else if (typeof insertValues === 'object' && isEmpty(insertValues)) {
       return {
-        sql: sql + returningSql + this._emptyInsertValue,
+        sql: sql + returningSql + this._emptyInsertValue + postReturningSql,
         returning,
       };
     }
@@ -70,7 +71,7 @@ assign(QueryCompiler_MSSQL.prototype, {
         }
         sql += ')';
       } else if (insertValues.length === 1 && insertValues[0]) {
-        sql += returningSql + this._emptyInsertValue;
+        sql += returningSql + this._emptyInsertValue + postReturningSql;
       } else {
         sql = '';
       }
@@ -99,6 +100,7 @@ assign(QueryCompiler_MSSQL.prototype, {
         (join ? ` from ${this.tableName} ${join}` : '') +
         (where ? ` ${where}` : '') +
         (order ? ` ${order}` : '') +
+        (returning ? ` ${this._postReturning('update', returning)}`: '') +
         (!returning ? this._returning('rowcount', '@@rowcount') : ''),
       returning: returning || '@@rowcount',
     };
@@ -116,6 +118,7 @@ assign(QueryCompiler_MSSQL.prototype, {
         `delete from ${tableName}` +
         (returning ? ` ${this._returning('del', returning)}` : '') +
         (wheres ? ` ${wheres}` : '') +
+        (returning ? ` ${this._postReturning('del', returning)}`: '') +
         (!returning ? this._returning('rowcount', '@@rowcount') : ''),
       returning: returning || '@@rowcount',
     };
@@ -153,25 +156,23 @@ assign(QueryCompiler_MSSQL.prototype, {
   },
 
   _returning(method, value) {
-    var buildInto = function() {
-      var tmpTable = `#ident_insert_${Date.now()}`;
-      return `into ${tmpTable};select * from ${tmpTable}; drop table ${tmpTable}`;
-    };
-    
     switch (method) {
       case 'update':
       case 'insert':
         return value
-          ? `output ${this.formatter.columnizeWithPrefix('inserted.', value)} ${buildInto()}`
+          ? `output ${this.formatter.columnizeWithPrefix('inserted.', value)}`
           : '';
       case 'del':
-        var tmpTable = `#ident_insert_${Date.now()}`
         return value
-          ? `output ${this.formatter.columnizeWithPrefix('deleted.', value)} ${buildInto()}`
+          ? `output ${this.formatter.columnizeWithPrefix('deleted.', value)}`
           : '';
       case 'rowcount':
         return value ? ';select @@rowcount' : '';
     }
+  },
+
+  _postReturning(method, value) {
+    return `; select scope_identity() AS ${this.formatter.columnize(value)}`
   },
 
   // Compiles a `truncate` query.
