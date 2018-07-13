@@ -153,15 +153,21 @@ assign(QueryCompiler_MSSQL.prototype, {
   },
 
   _returning(method, value) {
+    var buildInto = function() {
+      var tmpTable = `#ident_insert_${Date.now()}`;
+      return `into ${tmpTable};select * from ${tmpTable}; drop table ${tmpTable}`;
+    };
+    
     switch (method) {
       case 'update':
       case 'insert':
         return value
-          ? `output ${this.formatter.columnizeWithPrefix('inserted.', value)}`
+          ? `output ${this.formatter.columnizeWithPrefix('inserted.', value)} ${buildInto()}`
           : '';
       case 'del':
+        var tmpTable = `#ident_insert_${Date.now()}`
         return value
-          ? `output ${this.formatter.columnizeWithPrefix('deleted.', value)}`
+          ? `output ${this.formatter.columnizeWithPrefix('deleted.', value)} ${buildInto()}`
           : '';
       case 'rowcount':
         return value ? ';select @@rowcount' : '';
