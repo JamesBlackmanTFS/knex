@@ -69,7 +69,7 @@ assign(QueryCompiler_MSSQL.prototype, {
             this.client.valueForUndefined
           );
         }
-        sql += ')';
+        sql += ')' + postReturningSql;
       } else if (insertValues.length === 1 && insertValues[0]) {
         sql += returningSql + this._emptyInsertValue + postReturningSql;
       } else {
